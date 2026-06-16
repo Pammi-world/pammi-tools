@@ -4,35 +4,35 @@
   "_owner": "pammibot6@gmail.com",
   "_created_at": "2026-06-16",
   "root": {
-    "id": null,
+    "id": "1NcdxtEbySjVjUWVMu01qcszJkPbfulm_",
     "name": "Pammi Content System"
   },
   "source": {
-    "id": null,
+    "id": "1u1mr7rnYaPe5dL8Qg3E36XOQpkNQuljg",
     "name": "source"
   },
   "exports": {
-    "id": null,
+    "id": "1-_gvlnSEaAxgqT5S7gL7xl78QaxfJG9W",
     "name": "exports"
   },
   "linkedin": {
-    "id": null,
+    "id": "15CiUyJj9q1PH754xZ4KsCeF5C1fGDuB5",
     "name": "linkedin"
   },
   "blogs": {
-    "id": null,
+    "id": "1x99tltDuXwSr5awKTwjDGwo9GFPkJdIs",
     "name": "blogs"
   },
   "shorts": {
-    "id": null,
+    "id": "1TM6VOoVaVNNg4hltdNXfnQaS7h8D4pRv",
     "name": "shorts"
   },
   "reels": {
-    "id": null,
+    "id": "1xjx2d1oM6aA8hQU2bKs-3RCTiqN85OAd",
     "name": "reels"
   },
   "x": {
-    "id": null,
+    "id": "1hDp9w-gvpAJzdrfadBVTA_YYx1Y6uI1h",
     "name": "x"
   }
 }
