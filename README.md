@@ -304,7 +304,12 @@ topic = normalize_topic("Hello, World!")
 print(topic)  # "hello-world"
 
 # Check for duplicates (reads Google Sheet)
-existing = find_duplicate("linkedin", "Queues for AI Agents!", "2026-06-18")
+existing = find_duplicate(
+    sheet_id="1rHM6bHIsq8h8a0jG83afWdlZs6wHV25yANutPdkhODk",
+    platform="linkedin",
+    topic="Queues for AI Agents!",
+    scheduled_date="2026-06-18",
+)
 if existing:
     print(f"DUPLICATE: {existing['post_id']} (status: {existing['status']})")
 else:
@@ -318,6 +323,9 @@ else:
 ./pammi-dedup compute --platform linkedin --topic "Queues for AI Agents!" --date 2026-06-18
 # Output: linkedin:queues-for-ai-agents:2026-06-18
 
+# Or use python -m
+python -m pammi_dedup compute --platform linkedin --topic "Queues for AI Agents!" --date 2026-06-18
+
 # Just normalize a topic
 ./pammi-dedup normalize "Hello, World!!"
 # Output: hello-world
@@ -326,6 +334,9 @@ else:
 ./pammi-dedup check --platform linkedin --topic "Queues for AI Agents!" --date 2026-06-18
 # Output: {"post_id": "LI-042", "dedup_key": "linkedin:...", "status": "READY", ...}
 # (or "null" if no duplicate)
+
+# Custom sheet ID
+./pammi-dedup check --sheet-id <other-sheet-id> --platform linkedin --topic "X" --date 2026-06-18
 ```
 
 ### Duplicate Detection

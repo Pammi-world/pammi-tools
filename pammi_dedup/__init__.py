@@ -137,21 +137,25 @@ def _composio_env() -> dict:
     return {**os.environ, "PATH": "/root/.composio:" + os.environ.get("PATH", "")}
 
 
-def _read_sheet_columns(tab: str, columns: list[str]) -> dict[str, list[str]]:
+def _read_sheet_columns(sheet_id: str, tab: str, columns: list[str]) -> dict[str, list[str]]:
     """Read multiple columns from a Google Sheet tab.
 
-    Returns a dict {column_name: [values...]}.
+    Args:
+        sheet_id: The Google Sheet ID
+        tab: Tab name within the sheet
+        columns: List of column letters/names to read
+
+    Returns:
+        Dict {column_name: [values...]}.
     """
     # Build a range that captures all needed columns
-    # Simple approach: get the full row data, then extract columns
-    # But we need to be smart about column letters
     ranges = []
     for col in columns:
         ranges.append(f"{tab}!{col}2:{col}Z")
 
     result = subprocess.run(
         ["composio", "execute", "GOOGLESHEETS_BATCH_GET", "-d",
-         json.dumps({"spreadsheet_id": SPREADSHEET_ID, "ranges": ranges})],
+         json.dumps({"spreadsheet_id": sheet_id, "ranges": ranges})],
         env=_composio_env(),
         capture_output=True,
         text=True,
@@ -190,16 +194,15 @@ def _read_sheet_columns(tab: str, columns: list[str]) -> dict[str, list[str]]:
     return result_dict
 
 
-def find_duplicate(platform: str, topic: str,
-                   scheduled_date: Optional[str] = None,
-                   spreadsheet_id: Optional[str] = None) -> Optional[dict]:
+def find_duplicate(sheet_id: str, platform: str, topic: str,
+                   scheduled_date: Optional[str] = None) -> Optional[dict]:
     """Check the Google Sheet for an existing post with the same dedup_key.
 
     Args:
+        sheet_id: The Google Sheet ID (e.g., the Pammi Content Calendar ID)
         platform: e.g. "linkedin"
         topic: The topic text
         scheduled_date: Date string in YYYY-MM-DD format
-        spreadsheet_id: Override the default spreadsheet (for testing)
 
     Returns:
         Dict with the existing post info if duplicate found, else None.
@@ -219,7 +222,7 @@ def find_duplicate(platform: str, topic: str,
     topic_col = "topic"
 
     columns = [id_col, dedup_col, status_col, topic_col]
-    sheet_data = _read_sheet_columns(tab, columns)
+    sheet_data = _read_sheet_columns(sheet_id, tab, columns)
 
     # Walk through rows
     dedups = sheet_data.get(dedup_col, [])
@@ -272,6 +275,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     check_parser.add_argument("--platform", required=True, help="Platform")
     check_parser.add_argument("--topic", required=True, help="Topic text")
     check_parser.add_argument("--date", default=None, help="Scheduled date")
+    check_parser.add_argument(
+        "--sheet-id",
+        default=SPREADSHEET_ID,
+        help=f"Google Sheet ID (default: {SPREADSHEET_ID})",
+    )
 
     # normalize command (helper)
     norm_parser = subparsers.add_parser("normalize", help="Just normalize a topic")
@@ -290,7 +298,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     elif args.command == "check":
         try:
-            existing = find_duplicate(args.platform, args.topic, args.date)
+            existing = find_duplicate(args.sheet_id, args.platform, args.topic, args.date)
             if existing:
                 print(json.dumps(existing, indent=2))
             else:

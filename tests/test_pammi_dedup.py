@@ -167,7 +167,7 @@ class TestFindDuplicate(unittest.TestCase):
             "status": [],
             "topic": [],
         }
-        result = find_duplicate("linkedin", "Brand New Topic", "2026-06-18")
+        result = find_duplicate(SPREADSHEET_ID, "linkedin", "Brand New Topic", "2026-06-18")
         self.assertIsNone(result)
 
     @patch("pammi_dedup._read_sheet_columns")
@@ -181,7 +181,7 @@ class TestFindDuplicate(unittest.TestCase):
             "status": ["POSTED", "READY"],
             "topic": ["Other", "Queues for AI Agents"],
         }
-        result = find_duplicate("linkedin", "Queues for AI Agents!", "2026-06-18")
+        result = find_duplicate(SPREADSHEET_ID, "linkedin", "Queues for AI Agents!", "2026-06-18")
         self.assertIsNotNone(result)
         self.assertEqual(result["post_id"], "LI-002")
         self.assertEqual(result["status"], "READY")
@@ -194,7 +194,7 @@ class TestFindDuplicate(unittest.TestCase):
             "status": ["SKIPPED"],
             "topic": ["Queues for AI Agents"],
         }
-        result = find_duplicate("linkedin", "Queues for AI Agents!", "2026-06-18")
+        result = find_duplicate(SPREADSHEET_ID, "linkedin", "Queues for AI Agents!", "2026-06-18")
         self.assertIsNone(result)
 
     @patch("pammi_dedup._read_sheet_columns")
@@ -205,7 +205,7 @@ class TestFindDuplicate(unittest.TestCase):
             "status": ["ARCHIVED"],
             "topic": ["Queues"],
         }
-        result = find_duplicate("linkedin", "Queues for AI Agents!", "2026-06-18")
+        result = find_duplicate(SPREADSHEET_ID, "linkedin", "Queues for AI Agents!", "2026-06-18")
         self.assertIsNone(result)
 
     @patch("pammi_dedup._read_sheet_columns")
@@ -217,7 +217,7 @@ class TestFindDuplicate(unittest.TestCase):
             "status": ["POSTED"],
             "topic": ["Queues"],
         }
-        result = find_duplicate("linkedin", "Queues for AI Agents!", "2026-06-18")
+        result = find_duplicate(SPREADSHEET_ID, "linkedin", "Queues for AI Agents!", "2026-06-18")
         self.assertIsNotNone(result)
 
     @patch("pammi_dedup._read_sheet_columns")
@@ -228,7 +228,7 @@ class TestFindDuplicate(unittest.TestCase):
             "status": ["POSTED"],
             "topic": ["Queues"],
         }
-        result = find_duplicate("linkedin", "Queues for AI Agents!", "2026-06-18")
+        result = find_duplicate(SPREADSHEET_ID, "linkedin", "Queues for AI Agents!", "2026-06-18")
         self.assertIsNone(result)
 
     @patch("pammi_dedup._read_sheet_columns")
@@ -239,12 +239,12 @@ class TestFindDuplicate(unittest.TestCase):
             "status": ["READY"],
             "topic": ["Topic"],
         }
-        result = find_duplicate("linkedin", "Topic", "2026-06-18")
+        result = find_duplicate(SPREADSHEET_ID, "linkedin", "Topic", "2026-06-18")
         self.assertEqual(result["row"], 2)  # Row 2 in sheet (1-indexed, skip header)
 
     def test_unsupported_platform(self):
         with self.assertRaises(ValueError):
-            find_duplicate("myspace", "Topic", "2026-06-18")
+            find_duplicate(SPREADSHEET_ID, "myspace", "Topic", "2026-06-18")
 
 
 class TestActiveStatuses(unittest.TestCase):
