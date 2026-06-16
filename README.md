@@ -224,8 +224,8 @@ print(result)
 # Show current folder configuration
 ./pammi-drive show
 
-# Upload a file
-./pammi-drive upload my_image.png linkedin
+# Upload a file (flag-based)
+./pammi-drive upload --platform linkedin --file my_image.png
 # Output:
 # {
 #   "file_id": "abc123",

@@ -256,7 +256,9 @@ class TestCLI(unittest.TestCase):
         self.assertIsInstance(data, dict)
 
     def test_upload_missing_file(self):
-        result, stdout, stderr = self._run_cli(["upload", "/nonexistent.png", "linkedin"])
+        result, stdout, stderr = self._run_cli([
+            "upload", "--file", "/nonexistent.png", "--platform", "linkedin"
+        ])
         self.assertEqual(result, 1)
         self.assertIn("Error", stderr)
 
