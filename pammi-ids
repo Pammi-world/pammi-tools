@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""CLI entry point for pammi-ids"""
+import sys
+from pammi_ids import main
+
+if __name__ == "__main__":
+    sys.exit(main())
