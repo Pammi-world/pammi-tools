@@ -4,6 +4,7 @@ Shared Python utilities for the Pammi Content System. Currently includes:
 
 - **`pammi_ids`** — Deterministic, human-readable ID generator
 - **`pammi_drive`** — Google Drive upload helper
+- **`pammi_dedup`** — Content deduplication
 
 ## pammi_ids
 
@@ -129,12 +130,16 @@ pammi-tools/
 │   └── __init__.py         # ID generator library
 ├── pammi_drive/
 │   └── __init__.py         # Drive upload helper
+├── pammi_dedup/
+│   └── __init__.py         # Dedup key library
 ├── pammi-ids               # ID generator CLI
 ├── pammi-drive             # Drive upload CLI
+├── pammi-dedup             # Dedup CLI
 ├── drive-config.json       # Drive folder ID cache
 ├── tests/
 │   ├── test_pammi_ids.py
-│   └── test_pammi_drive.py
+│   ├── test_pammi_drive.py
+│   └── test_pammi_dedup.py
 ├── SETUP.md                # Drive setup instructions
 └── README.md
 ```
@@ -258,4 +263,88 @@ python3 -m unittest tests.test_pammi_drive
 - Find / create / get-or-create folder
 - Platform → folder key mapping
 - File upload with MIME type detection
+- CLI interface
+
+## pammi_dedup
+
+Content deduplication for the Pammi Content System. Before Content Pammi creates a new platform row, it checks for duplicates using a `dedup_key`.
+
+### Format
+
+```
+platform:normalized_topic:yyyy-mm-dd
+```
+
+Example: `linkedin:queues-for-ai-agents:2026-06-18`
+
+### Normalization Rules
+
+When normalizing a topic:
+1. Lowercase
+2. Strip leading/trailing whitespace
+3. Collapse multiple spaces
+4. Replace underscores with spaces (then with dashes)
+5. Remove punctuation (keep alphanumerics, spaces, dashes)
+6. Replace spaces with dashes
+7. Trim leading/trailing dashes
+
+### Usage
+
+#### Python API
+
+```python
+from pammi_dedup import compute_dedup_key, normalize_topic, find_duplicate
+
+# Compute a key
+key = compute_dedup_key("linkedin", "Queues for AI Agents!", "2026-06-18")
+print(key)  # "linkedin:queues-for-ai-agents:2026-06-18"
+
+# Just normalize
+topic = normalize_topic("Hello, World!")
+print(topic)  # "hello-world"
+
+# Check for duplicates (reads Google Sheet)
+existing = find_duplicate("linkedin", "Queues for AI Agents!", "2026-06-18")
+if existing:
+    print(f"DUPLICATE: {existing['post_id']} (status: {existing['status']})")
+else:
+    print("No duplicate, safe to create")
+```
+
+#### CLI
+
+```bash
+# Compute a dedup_key
+./pammi-dedup compute --platform linkedin --topic "Queues for AI Agents!" --date 2026-06-18
+# Output: linkedin:queues-for-ai-agents:2026-06-18
+
+# Just normalize a topic
+./pammi-dedup normalize "Hello, World!!"
+# Output: hello-world
+
+# Check for existing duplicates
+./pammi-dedup check --platform linkedin --topic "Queues for AI Agents!" --date 2026-06-18
+# Output: {"post_id": "LI-042", "dedup_key": "linkedin:...", "status": "READY", ...}
+# (or "null" if no duplicate)
+```
+
+### Duplicate Detection
+
+`find_duplicate` reads the relevant tab in the `Pammi Content Calendar` Google Sheet and looks for any row with the same `dedup_key`. It **excludes** rows with these statuses:
+- `SKIPPED`
+- `ARCHIVED`
+- Empty/missing status
+
+All other statuses (DRAFT, ASSET_READY, READY, APPROVED, SCHEDULED, POSTED) count as duplicates.
+
+### Tests
+
+```bash
+python3 -m unittest tests.test_pammi_dedup
+```
+
+48 tests covering:
+- Normalization edge cases (punctuation, whitespace, dashes, emojis, unicode)
+- Dedup key computation (date formats, platform lowercasing, defaults)
+- Duplicate detection (status filtering, row matching, edge cases)
 - CLI interface
