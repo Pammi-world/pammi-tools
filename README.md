@@ -5,6 +5,7 @@ Shared Python utilities for the Pammi Content System. Currently includes:
 - **`pammi_ids`** — Deterministic, human-readable ID generator
 - **`pammi_drive`** — Google Drive upload helper
 - **`pammi_dedup`** — Content deduplication
+- **`pammi_timezone`** — Timezone handling (UTC/Eastern with DST)
 
 ## pammi_ids
 
@@ -132,14 +133,18 @@ pammi-tools/
 │   └── __init__.py         # Drive upload helper
 ├── pammi_dedup/
 │   └── __init__.py         # Dedup key library
+├── pammi_timezone/
+│   └── __init__.py         # Timezone handling library
 ├── pammi-ids               # ID generator CLI
 ├── pammi-drive             # Drive upload CLI
 ├── pammi-dedup             # Dedup CLI
+├── pammi-timezone          # Timezone CLI
 ├── drive-config.json       # Drive folder ID cache
 ├── tests/
 │   ├── test_pammi_ids.py
 │   ├── test_pammi_drive.py
-│   └── test_pammi_dedup.py
+│   ├── test_pammi_dedup.py
+│   └── test_pammi_timezone.py
 ├── SETUP.md                # Drive setup instructions
 └── README.md
 ```
@@ -359,3 +364,121 @@ python3 -m unittest tests.test_pammi_dedup
 - Dedup key computation (date formats, platform lowercasing, defaults)
 - Duplicate detection (status filtering, row matching, edge cases)
 - CLI interface
+
+## pammi_timezone
+
+Timezone handling for the Pammi Content System. The user is in NYC (Eastern time), but we store all times internally in UTC and convert at the boundary.
+
+### Strategy
+
+- **Internal storage/computation:** UTC
+- **Display:** America/New_York (with EDT/EST abbreviation)
+- **User input:** Naive datetimes assumed to be Eastern
+- **DST:** Automatically handled via `zoneinfo` (Python 3.9+)
+
+### Usage
+
+#### Python API
+
+```python
+from pammi_timezone import (
+    now_utc, now_eastern,
+    eastern_to_utc, utc_to_eastern,
+    parse_user_datetime, format_for_display,
+)
+
+# Current time
+utc = now_utc()         # 2026-06-16 03:30:00+00:00
+eastern = now_eastern() # 2026-06-15 23:30:00-04:00 (EDT)
+
+# Convert
+eastern_to_utc("2026-06-18 09:00")  # 2026-06-18 13:00:00+00:00 (EDT)
+utc_to_eastern("2026-06-18T13:00:00Z")  # 2026-06-18 09:00:00-04:00 (EDT)
+
+# Parse user input
+utc = parse_user_datetime("tomorrow 9am")        # 2026-06-16 13:00:00+00:00
+utc = parse_user_datetime("2026-06-18 14:00")     # 2026-06-18 18:00:00+00:00
+utc = parse_user_datetime("Jun 18, 2026 9am EST") # 2026-06-18 14:00:00+00:00
+utc = parse_user_datetime("in 2 hours")           # 2 hours from now
+
+# Format for display
+format_for_display(parse_user_datetime("tomorrow 9am"))
+# "Jun 16, 2026 9:00 AM EDT"
+```
+
+#### CLI
+
+```bash
+# Show current time
+./pammi-timezone now
+# Output:
+#   UTC:    2026-06-16T03:30:00+00:00
+#   Eastern: 2026-06-15T23:30:00-04:00
+#   Display: Jun 15, 2026 11:30 PM EDT
+
+# Convert timezones
+./pammi-timezone convert --input "2026-06-18 09:00" --from eastern --to utc
+# 2026-06-18T13:00:00+00:00
+
+./pammi-timezone convert --input "2026-06-18T13:00:00Z" --from utc --to eastern
+# 2026-06-18T09:00:00-04:00
+
+# Format UTC as Eastern display
+./pammi-timezone format --input "2026-06-18T13:00:00Z"
+# Jun 18, 2026 9:00 AM EDT
+
+# Parse user input
+./pammi-timezone parse --input "tomorrow 9am"
+# UTC:  2026-06-16T13:00:00+00:00
+# Display: Jun 16, 2026 9:00 AM EDT
+
+# Module invocation
+python -m pammi_timezone now
+```
+
+### Supported Input Formats
+
+`parse_user_datetime` handles:
+- ISO 8601: `2026-06-18T09:00:00-04:00`, `2026-06-18T13:00:00Z`
+- Date+time: `2026-06-18 09:00`, `2026-06-18 09:00:00`
+- Date only: `2026-06-18`
+- US format: `06/18/2026`
+- Long form: `Jun 18, 2026 9:00 AM`
+- With TZ: `2026-06-18 09:00 EST`, `2026-06-18 09:00 EDT`, `2026-06-18 09:00 ET`
+- Natural: `tomorrow 9am`, `today 14:00`, `next friday 2pm`
+- Relative: `in 2 hours`, `in 30 minutes`, `in 3 days`
+
+### DST Handling
+
+Eastern time is either EST (UTC-5, winter) or EDT (UTC-4, summer). The library:
+- Detects DST automatically via `zoneinfo`
+- Transitions correctly at 2 AM on the second Sunday of March (spring forward) and first Sunday of November (fall back)
+- Always returns UTC, which has no DST
+
+```python
+# Summer (EDT, UTC-4)
+eastern_to_utc("2026-06-18 09:00")  # 2026-06-18 13:00:00+00:00
+format_for_display(...)  # "...EDT"
+
+# Winter (EST, UTC-5)
+eastern_to_utc("2026-01-18 09:00")  # 2026-01-18 14:00:00+00:00
+format_for_display(...)  # "...EST"
+```
+
+### Tests
+
+```bash
+python3 -m unittest tests.test_pammi_timezone
+```
+
+58 tests covering:
+- Basic now_utc / now_eastern
+- Eastern ↔ UTC conversions
+- DST spring forward (March) and fall back (November)
+- Naive datetime handling (assumed Eastern or UTC depending on function)
+- ISO 8601 with and without offsets
+- All natural language patterns (tomorrow, today, next X, in N hours)
+- Timezone suffixes (EST, EDT, ET, UTC, Z)
+- Leap year handling (Feb 29)
+- Display format consistency
+- CLI commands
