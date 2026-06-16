@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-"""Pammi Drive CLI."""
+"""Entry point for `python -m pammi_drive`"""
 import sys
 from pammi_drive import main
 
