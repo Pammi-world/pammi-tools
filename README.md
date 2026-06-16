@@ -6,6 +6,9 @@ Shared Python utilities for the Pammi Content System. Currently includes:
 - **`pammi_drive`** — Google Drive upload helper
 - **`pammi_dedup`** — Content deduplication
 - **`pammi_timezone`** — Timezone handling (UTC/Eastern with DST)
+- **`pammi_mermaid`** — Mermaid diagram rendering (PNG/SVG)
+- **`pammi_quickchart`** — QuickChart chart generation
+- **`pammi_bannerbear`** — Bannerbear API client (stub - needs API key)
 
 ## pammi_ids
 
@@ -135,16 +138,26 @@ pammi-tools/
 │   └── __init__.py         # Dedup key library
 ├── pammi_timezone/
 │   └── __init__.py         # Timezone handling library
+├── pammi_mermaid/
+│   └── __init__.py         # Mermaid rendering library
+├── pammi_quickchart/
+│   └── __init__.py         # QuickChart library
+├── pammi_bannerbear/
+│   └── __init__.py         # Bannerbear API stub
 ├── pammi-ids               # ID generator CLI
 ├── pammi-drive             # Drive upload CLI
 ├── pammi-dedup             # Dedup CLI
 ├── pammi-timezone          # Timezone CLI
+├── pammi-mermaid           # Mermaid CLI
+├── pammi-quickchart        # QuickChart CLI
+├── pammi-bannerbear        # Bannerbear CLI
 ├── drive-config.json       # Drive folder ID cache
 ├── tests/
 │   ├── test_pammi_ids.py
 │   ├── test_pammi_drive.py
 │   ├── test_pammi_dedup.py
-│   └── test_pammi_timezone.py
+│   ├── test_pammi_timezone.py
+│   └── test_visual_tools.py
 ├── SETUP.md                # Drive setup instructions
 └── README.md
 ```
@@ -482,3 +495,155 @@ python3 -m unittest tests.test_pammi_timezone
 - Leap year handling (Feb 29)
 - Display format consistency
 - CLI commands
+
+## Visual Content Tools
+
+### pammi_mermaid
+
+Renders Mermaid diagrams to PNG/SVG/PDF using `@mermaid-js/mermaid-cli`.
+
+**Setup (one-time):**
+
+```bash
+# Install Mermaid CLI globally
+npm install -g @mermaid-js/mermaid-cli
+
+# Install Chrome dependencies (Debian/Ubuntu)
+apt-get install -y libnspr4 libnss3 libatk1.0-0 libatk-bridge2.0-0 \
+  libcups2 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 \
+  libpango-1.0-0 libcairo2 fonts-liberation
+
+# The library auto-creates a Puppeteer config with --no-sandbox (for root)
+# Or create your own:
+cat > puppeteer.json << 'JSON'
+{ "args": ["--no-sandbox", "--disable-setuid-sandbox"] }
+JSON
+```
+
+**Python API:**
+```python
+from pammi_mermaid import render_diagram
+
+code = "flowchart LR\n    A[Start] --> B[Process]\n    B --> C[End]"
+result = render_diagram(code, "/tmp/diagram.png", format="png", scale=2)
+print(result)  # {output_path, format, size_bytes, theme, ...}
+```
+
+**CLI:**
+```bash
+./pammi-mermaid check                                # Verify mmdc is installed
+./pammi-mermaid render --input ./flow.mmd --output ./flow.png
+./pammi-mermaid render --input "mmd:graph TD; A-->B" --output ./inline.png
+./pammi-mermaid render --input ./state.mmd --output ./state.svg --theme dark
+python -m pammi_mermaid render --input ./flow.mmd --output ./flow.png
+```
+
+**Themes:** `default`, `dark`, `forest`, `neutral`, `base`
+
+### pammi_quickchart
+
+Generates chart images (bar, line, pie, radar, etc.) via QuickChart.
+
+**Setup (one-time):**
+No setup needed - uses the public API at https://quickchart.io
+
+For self-hosted QuickChart, set `--api-url http://localhost:3400` per call or pass `api_url=` to functions.
+
+**Python API:**
+```python
+from pammi_quickchart import render_chart, render_chart_to_file
+
+config = {
+    "type": "bar",
+    "data": {
+        "labels": ["Q1", "Q2", "Q3", "Q4"],
+        "datasets": [{"label": "Revenue", "data": [12, 19, 8, 15]}]
+    }
+}
+
+# Just get the URL
+result = render_chart(config, width=800, height=400)
+print(result["image_url"])
+
+# Download to file
+result = render_chart_to_file(config, "/tmp/chart.png", width=800, height=400)
+```
+
+**CLI:**
+```bash
+# From a config file
+./pammi-quickchart render --config ./chart.json --output ./chart.png
+
+# Inline config
+./pammi-quickchart render --config '{"type":"pie","data":{"labels":["A","B"],"datasets":[{"data":[60,40]}]}}' --output ./pie.png
+
+# Just get URL
+./pammi-quickchart url --config ./chart.json --width 800
+
+# python -m
+python -m pammi_quickchart render --config ./chart.json --output ./chart.png
+```
+
+**Self-hosted QuickChart:** install via Docker or npm, then pass `--api-url http://localhost:3400`.
+
+### pammi_bannerbear (STUB)
+
+Renders branded templates (concept cards, quote cards) via the Bannerbear API.
+
+**Setup (one-time):**
+1. Sign up at https://www.bannerbear.com/
+2. Get an API key from https://app.bannerbear.com/
+3. Set: `export BANNERBEAR_API_KEY=bb_pr_xxxxx`
+4. Create templates in the dashboard
+5. Use the template IDs when calling
+
+**Status check:**
+```bash
+./pammi-bannerbear status
+# ✗ BANNERBEAR_API_KEY is NOT set
+#   Set with: export BANNERBEAR_API_KEY=your_key_here
+```
+
+**Python API:**
+```python
+from pammi_bannerbear import BannerbearClient, BannerbearError, is_configured
+
+if not is_configured():
+    raise RuntimeError("Set BANNERBEAR_API_KEY first")
+
+bb = BannerbearClient()
+templates = bb.list_templates()
+for t in templates:
+    print(t["id"], t["name"])
+
+# Create an image
+result = bb.create_image(
+    template_id="abc123",
+    modifications=[
+        {"name": "title", "text": "Hello World"},
+        {"name": "subtitle", "text": "Subtitle"},
+    ],
+    sync=True,  # Wait for completion
+)
+print(result["image_url"])
+```
+
+**CLI:**
+```bash
+# Check setup
+./pammi-bannerbear status
+
+# List templates
+./pammi-bannerbear list
+
+# Get template details
+./pammi-bannerbear get --template-id abc123
+
+# Create image
+./pammi-bannerbear create-image \
+  --template-id abc123 \
+  --modifications '[{"name":"title","text":"Hello"}]' \
+  --output ./output.png
+```
+
+**Note:** This is a STUB. The API client is fully functional but not yet exercised against the live API. Once the user provides an API key, the client works as documented.

@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""Pammi Mermaid CLI."""
+import sys
+from pammi_mermaid import main
+
+if __name__ == "__main__":
+    sys.exit(main())
