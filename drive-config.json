@@ -1,0 +1,37 @@
+{
+  "_comment": "Google Drive folder IDs for the Pammi Content System. Run `pammi-drive setup` after authorizing Composio with Google Drive to populate this file.",
+  "_owner": "pammibot6@gmail.com",
+  "_created_at": "2026-06-16",
+  "root": {
+    "id": null,
+    "name": "Pammi Content System"
+  },
+  "source": {
+    "id": null,
+    "name": "source"
+  },
+  "exports": {
+    "id": null,
+    "name": "exports"
+  },
+  "exports_linkedin": {
+    "id": null,
+    "name": "linkedin"
+  },
+  "exports_blogs": {
+    "id": null,
+    "name": "blogs"
+  },
+  "exports_shorts": {
+    "id": null,
+    "name": "shorts"
+  },
+  "exports_reels": {
+    "id": null,
+    "name": "reels"
+  },
+  "exports_x": {
+    "id": null,
+    "name": "x"
+  }
+}
