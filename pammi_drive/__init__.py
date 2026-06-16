@@ -334,11 +334,16 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     # upload command
     upload_parser = subparsers.add_parser("upload", help="Upload a file")
-    upload_parser.add_argument("file", help="Local file path to upload")
     upload_parser.add_argument(
-        "platform",
+        "--platform",
+        required=True,
         choices=list(PLATFORM_TO_KEY.keys()),
         help="Target platform",
+    )
+    upload_parser.add_argument(
+        "--file",
+        required=True,
+        help="Local file path to upload",
     )
 
     # show command
