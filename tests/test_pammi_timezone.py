@@ -36,11 +36,12 @@ class TestNowFunctions(unittest.TestCase):
         self.assertEqual(n.tzinfo, EASTERN)
 
     def test_now_utc_eastern_are_same_instant(self):
-        # They should be the same instant in time
+        # They should be the same instant in time (within a few microseconds)
         u = now_utc()
         e = now_eastern()
-        # Convert both to UTC
-        self.assertEqual(u.astimezone(UTC), e.astimezone(UTC))
+        # Convert both to UTC and check the difference is < 1 second
+        diff = abs((u.astimezone(UTC) - e.astimezone(UTC)).total_seconds())
+        self.assertLess(diff, 1.0)
 
 
 class TestEasternToUtc(unittest.TestCase):
